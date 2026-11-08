@@ -21,6 +21,15 @@ internal static class StartupRegistration
         }
     }
 
+    /// <summary>Keeps the Run entry pointing at the executable that is running now.</summary>
+    public static void RefreshIfEnabled(bool startInTray)
+    {
+        if (IsEnabled())
+        {
+            Apply(true, startInTray, out _);
+        }
+    }
+
     public static bool Apply(bool enabled, bool startInTray, out string error)
     {
         try

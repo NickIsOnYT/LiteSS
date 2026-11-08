@@ -19,6 +19,7 @@ public sealed class MainForm : Form
     private readonly ContextMenuStrip _trayMenu;
     private Bitmap? _image;
     private bool _capturing;
+    private bool _ocrRunning;
     private bool _exitRequested;
     private bool _printScreenRegistered;
     private bool _systemShuttingDown;
@@ -27,6 +28,9 @@ public sealed class MainForm : Form
     {
         _settings = SettingsStore.Load();
         _startHidden = startHidden;
+
+        // Follow whichever build the user is running, so a moved/updated exe keeps starting.
+        StartupRegistration.RefreshIfEnabled(_settings.StartInTray);
 
         SuspendLayout();
 
@@ -92,6 +96,9 @@ public sealed class MainForm : Form
         var fullScreen = Theme.CreateButton("Full Screen");
         fullScreen.Click += (_, _) => CaptureFullScreen();
 
+        var ocr = Theme.CreateButton("OCR");
+        ocr.Click += (_, _) => RunOcr();
+
         var copy = Theme.CreateButton("Copy");
         copy.Click += (_, _) => CopyImage();
 
@@ -113,6 +120,7 @@ public sealed class MainForm : Form
         };
         left.Controls.Add(capture);
         left.Controls.Add(fullScreen);
+        left.Controls.Add(ocr);
 
         var right = new FlowLayoutPanel
         {
@@ -348,6 +356,84 @@ public sealed class MainForm : Form
         else if (_settings.ShowNotifications)
         {
             _trayIcon.ShowBalloonTip(2500, "Screenshot captured", summary, ToolTipIcon.Info);
+        }
+    }
+
+    /// <summary>Recognizes text in the current capture and opens the result window.</summary>
+    private async void RunOcr()
+    {
+        if (_ocrRunning)
+        {
+            return;
+        }
+
+        if (_image is null)
+        {
+            SetStatus("Nothing to recognize yet.");
+            return;
+        }
+
+        _ocrRunning = true;
+        var provider = OcrService.DisplayName(_settings.OcrProvider);
+
+        // Work on a copy so a new capture cannot dispose the bitmap mid-recognition.
+        Bitmap snapshot;
+        try
+        {
+            snapshot = (Bitmap)_image.Clone();
+        }
+        catch (Exception ex)
+        {
+            _ocrRunning = false;
+            SetStatus("OCR failed.");
+            MessageBox.Show(
+                this,
+                ex.Message,
+                "OCR failed",
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Error);
+            return;
+        }
+
+        SetStatus($"Recognizing text with {provider}…");
+
+        try
+        {
+            using (snapshot)
+            {
+                var text = await OcrService.RecognizeAsync(snapshot, _settings, CancellationToken.None);
+
+                if (string.IsNullOrWhiteSpace(text))
+                {
+                    SetStatus("No text was recognized.");
+                    MessageBox.Show(
+                        this,
+                        "No text was recognized in this screenshot.",
+                        "OCR",
+                        MessageBoxButtons.OK,
+                        MessageBoxIcon.Information);
+                    return;
+                }
+
+                SetStatus($"Recognized {text.Length} characters with {provider}.");
+                using var result = new OcrResultForm(_settings, text);
+                result.ShowDialog(this);
+                SetStatus("Ready.");
+            }
+        }
+        catch (Exception ex)
+        {
+            SetStatus($"{provider} failed.");
+            MessageBox.Show(
+                this,
+                ex.Message,
+                $"{provider} failed",
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Error);
+        }
+        finally
+        {
+            _ocrRunning = false;
         }
     }
 

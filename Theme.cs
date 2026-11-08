@@ -56,6 +56,57 @@ internal static class Theme
         };
     }
 
+    public static ComboBox CreateComboBox()
+    {
+        var combo = new ComboBox
+        {
+            DropDownStyle = ComboBoxStyle.DropDownList,
+            FlatStyle = FlatStyle.Flat,
+            DrawMode = DrawMode.OwnerDrawFixed,
+            BackColor = Surface,
+            ForeColor = Text,
+            ItemHeight = 20,
+            IntegralHeight = false,
+            MaxDropDownItems = 12,
+            Margin = new Padding(0, 2, 0, 2),
+        };
+
+        combo.DrawItem += (_, e) =>
+        {
+            if (e.Index < 0)
+            {
+                return;
+            }
+
+            var selected = (e.State & DrawItemState.Selected) == DrawItemState.Selected;
+            using var back = new SolidBrush(selected ? Accent : Surface);
+            e.Graphics.FillRectangle(back, e.Bounds);
+
+            var text = combo.GetItemText(combo.Items[e.Index]);
+            TextRenderer.DrawText(
+                e.Graphics,
+                text,
+                combo.Font,
+                e.Bounds,
+                Theme.Text,
+                TextFormatFlags.Left | TextFormatFlags.VerticalCenter | TextFormatFlags.EndEllipsis);
+        };
+
+        return combo;
+    }
+
+    public static TextBox CreateTextBox(bool password = false)
+    {
+        return new TextBox
+        {
+            BorderStyle = BorderStyle.FixedSingle,
+            BackColor = Viewer,
+            ForeColor = Text,
+            UseSystemPasswordChar = password,
+            Margin = new Padding(0, 2, 0, 2),
+        };
+    }
+
     public static ContextMenuStrip CreateContextMenu()
     {
         return new ContextMenuStrip

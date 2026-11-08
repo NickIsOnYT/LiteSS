@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
-    <TargetFramework>net8.0-windows</TargetFramework>
+    <TargetFramework>net8.0-windows10.0.19041.0</TargetFramework>
     <UseWindowsForms>true</UseWindowsForms>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
@@ -10,10 +10,19 @@
     <AssemblyName>LiteSS</AssemblyName>
     <ApplicationIcon>LSS.ico</ApplicationIcon>
     <ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
+    <SupportedOSPlatformVersion>10.0.19041.0</SupportedOSPlatformVersion>
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Tesseract" Version="5.2.0" GeneratePathProperty="true" ExcludeAssets="build;buildTransitive" />
+  </ItemGroup>
+
+  <ItemGroup>
     <EmbeddedResource Include="LSS.ico" LogicalName="LiteSS.LSS.ico" />
+    <EmbeddedResource Include="python\litess_helper.py" LogicalName="LiteSS.python.litess_helper.py" />
+    <EmbeddedResource Include="tessdata\eng.traineddata" LogicalName="LiteSS.tessdata.eng.traineddata" />
+    <EmbeddedResource Include="$(PkgTesseract)\x64\leptonica-1.82.0.dll" LogicalName="LiteSS.native.leptonica-1.82.0.dll" />
+    <EmbeddedResource Include="$(PkgTesseract)\x64\tesseract50.dll" LogicalName="LiteSS.native.tesseract50.dll" />
   </ItemGroup>
 
 </Project>
